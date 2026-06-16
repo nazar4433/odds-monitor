@@ -1,7 +1,7 @@
 import requests
 import csv
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 API_KEY = 'a61931e1b164f8bb7886e2098adb5f72'
 TELEGRAM_TOKEN = '8966581535:AAHdUqun4y_2SKVSPnxJXJy2hrhbmie87ow'
@@ -15,17 +15,15 @@ def check_odds():
     url = 'https://api.the-odds-api.com/v4/sports/soccer/odds/'
     params = {'apiKey': API_KEY, 'regions': 'eu', 'markets': 'h2h'}
 
-response = requests.get(url, params=params)
-games = response.json()
-
-# Фільтруємо тільки майбутні матчі
-from datetime import timezone
-now = datetime.now(timezone.utc)
-games = [g for g in games if datetime.fromisoformat(g['commence_time'].replace('Z', '+00:00')) > now]
-
     response = requests.get(url, params=params)
     games = response.json()
+
+    # Тільки майбутні матчі
+    now = datetime.now(timezone.utc)
+    games = [g for g in games if datetime.fromisoformat(g['commence_time'].replace('Z', '+00:00')) > now]
+
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f"\n🔍 Аналіз о {timestamp} — матчів до старту: {len(games)}")
 
     current = {}
     for game in games:
@@ -56,8 +54,6 @@ games = [g for g in games if datetime.fromisoformat(g['commence_time'].replace('
         pass
 
     THRESHOLD = 0.05
-    print(f"\n🔍 Аналіз о {timestamp}")
-
     for key, curr in current.items():
         if key in previous:
             prev = previous[key]
@@ -66,7 +62,7 @@ games = [g for g in games if datetime.fromisoformat(g['commence_time'].replace('
                     change = abs(curr[side] - prev[side]) / prev[side]
                     if change >= THRESHOLD:
                         direction = "⬆️" if curr[side] > prev[side] else "⬇️"
-                        msg = (f"🚨 АНОМАЛІЯ: {key}\n"
+                        msg = (f"🚨 АНОМАЛІЯ (до старту): {key}\n"
                                f"{label}: {prev[side]} → {curr[side]} {direction} ({change*100:.1f}%)")
                         print(msg)
                         send_telegram(msg)
@@ -89,7 +85,6 @@ games = [g for g in games if datetime.fromisoformat(g['commence_time'].replace('
 
     print(f"✅ Збережено {len(games)} матчів")
 
-# Головний цикл — працює безперервно
 print("🚀 Бот запущено!")
 send_telegram("🚀 OddsMonitor запущено і працює!")
 
