@@ -15,6 +15,14 @@ def check_odds():
     url = 'https://api.the-odds-api.com/v4/sports/soccer/odds/'
     params = {'apiKey': API_KEY, 'regions': 'eu', 'markets': 'h2h'}
 
+response = requests.get(url, params=params)
+games = response.json()
+
+# Фільтруємо тільки майбутні матчі
+from datetime import timezone
+now = datetime.now(timezone.utc)
+games = [g for g in games if datetime.fromisoformat(g['commence_time'].replace('Z', '+00:00')) > now]
+
     response = requests.get(url, params=params)
     games = response.json()
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
